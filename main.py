@@ -19,6 +19,11 @@ class BoatStatus(BaseModel):
     passed: int = Field(..., gt=0, lt=3)  # 1: laser 1, 2: laser 2
 
 
+@app.get("/get-status")
+def get_boat_status():
+    return boat_status_collection.find_one({}, {"_id": 0})
+
+
 @app.post("/update-status")
 def update_boat_status(boat_status: BoatStatus):
     boat_status_collection.update_one({}, {"$set": boat_status.dict()}, upsert=True)
