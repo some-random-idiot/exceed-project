@@ -62,7 +62,7 @@ def time_estimation(request: Dict[Literal['t'], int]):
     else:
         estimate_data["estimate_time"] = (estimate_data["estimate_time"] * estimate_data["count"] + request['t']) \
                                          / (estimate_data["count"] + 1)
-        estimate_data["count"] = estimate_collection.find_one()["count"] + 1
+        estimate_data["count"] = estimate_collection.find_one({}, {"_id": 0})["count"] + 1
         estimate_collection.update_one({}, {"$set": estimate_data})
     return {"status": "Estimated time updated!",
-            "estimated_time": estimate_collection.find_one()}
+            "estimated_time": estimate_collection.find_one({}, {"_id": 0})}
