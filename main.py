@@ -30,10 +30,11 @@ def get_boat_status():
 
 @app.post("/update-status")
 def update_boat_status(boat_status: BoatStatus):
-    boat_status_collection.update_one({}, {"$set": boat_status.dict()}, upsert=True)
+    boat_status = boat_status.dict()
+    boat_status_collection.update_one({}, {"$set": boat_status}, upsert=True)
     return {"status": "Boat status updated!",
-            "where": boat_status.where,
-            "passed": boat_status.passed}
+            "where": boat_status["where"],
+            "passed": boat_status["passed"]}
 
 
 @app.get("/get-schedule")
