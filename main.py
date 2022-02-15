@@ -19,7 +19,9 @@ class BoatStatus(BaseModel):
     passed: int  # 1: laser 1, 2: laser 2
 
 
-@app.post("/update-boat-status")
+@app.post("/update-status")
 def update_boat_status(boat_status: BoatStatus):
     boat_status_collection.insert_one(boat_status.dict())
     return {"status": "Boat status updated!"}
+
+
