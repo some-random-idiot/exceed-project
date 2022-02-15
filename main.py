@@ -22,6 +22,6 @@ class BoatStatus(BaseModel):
 @app.post("/update-status")
 def update_boat_status(boat_status: BoatStatus):
     boat_status_collection.insert_one(boat_status.dict())
-    return {"status": "Boat status updated!"}
-
-
+    return {"status": "Boat status updated!",
+            "where": boat_status.where,
+            "passed": boat_status.passed}
