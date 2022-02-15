@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from fastapi import FastAPI
 
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Dict
 
 app = FastAPI()
 
@@ -11,6 +11,7 @@ client = MongoClient("localhost", 27017)
 database = client["project"]
 boat_status_collection = database["boat_status"]
 schedule_collection = database["schedule"]
+estimate_collection = database["estimate"]
 
 
 class BoatStatus(BaseModel):
@@ -48,3 +49,20 @@ def create_schedule(schedule: Schedule):
     return {"status": "Schedule updated!",
             "day_name": schedule.day_name,
             "time": schedule.time}
+
+
+@app.post("/estimate-time")
+def estimate_time(request: Dict[Literal['t'], int]):
+    estimate_data = {"estimate_time": 0,
+                     "count": 0}
+    if estimate_collection.find_one() is None:
+        estimate_data["estimate_time"] = request['t']
+        estimate_data["count"] = 1
+        estimate_collection.insert_one(estimate_data)
+    else:
+        estimate_data["estimate_time"] = (estimate_data["estimate_time"] * estimate_data["count"] + request['t']) \
+                                         / (estimate_data["count"] + 1)
+        estimate_data["count"] = estimate_collection.find_one()["count"] + 1
+        estimate_collection.update_one({}, {"$set": estimate_data})
+    return {"status": "Estimated time updated!",
+            "estimated_time": estimate_collection.find_one()}
