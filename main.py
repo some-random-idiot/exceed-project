@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 from fastapi import FastAPI
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from datetime import datetime
 
@@ -15,13 +15,13 @@ schedule_collection = database["schedule"]
 
 
 class BoatStatus(BaseModel):
-    where: int  # 0: start, 1: end
-    passed: int  # 1: laser 1, 2: laser 2
+    where: int = Field(..., gt=-1, lt=2)  # 0: start, 1: end
+    passed: int = Field(..., gt=0, lt=3)  # 1: laser 1, 2: laser 2
 
 
 @app.post("/update-status")
 def update_boat_status(boat_status: BoatStatus):
-    boat_status_collection.insert_one(boat_status.dict())
+    boat_status_collection.update_one({}, {"$set": boat_status.dict()}, upsert=True)
     return {"status": "Boat status updated!",
             "where": boat_status.where,
             "passed": boat_status.passed}
