@@ -2,8 +2,7 @@ from pymongo import MongoClient
 from fastapi import FastAPI
 
 from pydantic import BaseModel, Field
-
-from datetime import datetime
+from typing import Literal
 
 app = FastAPI()
 
@@ -19,6 +18,11 @@ class BoatStatus(BaseModel):
     passed: int = Field(..., gt=0, lt=3)  # 1: laser 1, 2: laser 2
 
 
+class Schedule(BaseModel):
+    day_name: Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+    time: int  # Store this in minutes.
+
+
 @app.get("/get-status")
 def get_boat_status():
     return boat_status_collection.find_one({}, {"_id": 0})
@@ -30,3 +34,16 @@ def update_boat_status(boat_status: BoatStatus):
     return {"status": "Boat status updated!",
             "where": boat_status.where,
             "passed": boat_status.passed}
+
+
+@app.get("/get-schedule")
+def get_schedule():
+    return schedule_collection.find({}, {"_id": 0})
+
+
+@app.post("/create-schedule")
+def create_schedule(schedule: Schedule):
+    schedule_collection.insert_one(schedule.dict())
+    return {"status": "Schedule updated!",
+            "day_name": schedule.day_name,
+            "time": schedule.time}
