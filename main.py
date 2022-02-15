@@ -51,8 +51,8 @@ def create_schedule(schedule: Schedule):
             "time": schedule.time}
 
 
-@app.post("/estimate-time")
-def estimate_time(request: Dict[Literal['t'], int]):
+@app.post("/time-estimation")
+def time_estimation(request: Dict[Literal['t'], int]):
     estimate_data = {"estimate_time": 0,
                      "count": 0}
     if estimate_collection.find_one() is None:
