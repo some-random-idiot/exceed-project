@@ -33,6 +33,11 @@ class Schedule(BaseModel):
     time: int = Field(..., gt=-1)  # Store this in minutes.
 
 
+class ScheduleEdit(Schedule):
+    old_day_name: Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+    old_time: int = Field(..., gt=-1)  # Store this in minutes.
+
+
 class TimeEstimate(BaseModel):
     t: int = Field(..., gt=-1)  # In minutes.
 
@@ -74,6 +79,20 @@ def create_schedule(schedule: Schedule):
     return {"status": "Schedule created!",
             "day_name": schedule.day_name,
             "time": schedule.time}
+
+
+@app.post("/edit-schedule")
+def edit_schedule(schedule: ScheduleEdit):
+    """Delete the old schedule and create a new one. If the new schedule information already exists, return an error."""
+    if schedule_collection.find_one({"day_name": schedule.day_name, "time": schedule.time}) is not None:
+        return {"status": "Schedule already exists!"}
+    schedule_collection.delete_one({"day_name": schedule.old_day_name, "time": schedule.old_time})
+    schedule_collection.insert_one(schedule.dict())
+    return {"status": "Schedule edited!",
+            "day_name": schedule.day_name,
+            "time": schedule.time,
+            "old_day_name": schedule.old_day_name,
+            "old_time": schedule.old_time}
 
 
 @app.delete("/delete-schedule")
