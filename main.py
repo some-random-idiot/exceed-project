@@ -71,7 +71,7 @@ def create_schedule(schedule: Schedule):
             "time": schedule.time}
 
 
-@app.post("/delete-schedule")
+@app.delete("/delete-schedule")
 def delete_schedule(schedule: Schedule):
     """Delete a schedule."""
     if schedule_collection.find_one({"day_name": schedule.day_name, "time": schedule.time}) is None:
