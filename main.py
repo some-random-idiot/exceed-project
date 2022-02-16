@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from pydantic import BaseModel, Field
 from typing import Literal
@@ -7,6 +8,14 @@ from typing import Literal
 app = FastAPI()
 
 client = MongoClient("localhost", 27017)
+trusted_origins = ['*']
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=trusted_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 database = client["project"]
 schedule_collection = database["schedule"]
