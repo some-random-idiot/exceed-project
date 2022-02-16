@@ -9,7 +9,6 @@ app = FastAPI()
 client = MongoClient("localhost", 27017)
 
 database = client["project"]
-boat_status_collection = database["boat_status"]
 schedule_collection = database["schedule"]
 estimate_collection = database["estimate"]
 
