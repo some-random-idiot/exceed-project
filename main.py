@@ -65,15 +65,19 @@ def create_schedule(schedule: Schedule):
 @app.post("/time-estimation")
 def time_estimation(request: Dict[Literal['t'], int]):
     """Write time to database, and return the estimated time."""
-    estimate_data = {"estimate_time": 0,
+    estimate_data = {"estimate_time": 0,  # Document template.
                      "count": 0}
+
     if estimate_collection.find_one() is None:
+        # If there is no record of estimated time in the database, create one.
         estimate_data["estimate_time"] = request['t']
         estimate_data["count"] = 1
         estimate_collection.insert_one(estimate_data)
     else:
+        # If there is a record of estimated time in the database, update it.
         estimate_data["count"] = estimate_collection.find_one()["count"] + 1
         estimate_data["estimate_time"] = (estimate_data["estimate_time"] + estimate_data["count"] + request['t']) / (estimate_data["count"])
         estimate_collection.update_one({}, {"$set": estimate_data})
+    # Return the estimated time.
     return {"status": "Estimated time updated!",
             "estimated_time": estimate_collection.find_one({}, {"_id": 0})}
