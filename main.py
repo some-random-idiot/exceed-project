@@ -14,7 +14,7 @@ schedule_collection = database["schedule"]
 estimate_collection = database["estimate"]
 
 
-# Store boat status in variables for quicker access.
+# Store the boat's status in variables for quicker access.
 where: int
 passed: int
 
@@ -31,12 +31,14 @@ class Schedule(BaseModel):
 
 @app.get("/get-status")
 def get_boat_status():
+    """Return the boat's status."""
     return {"where": where,
             "passed": passed}
 
 
 @app.post("/update-status")
 def update_boat_status(boat_status: BoatStatus):
+    """Update the boat's status."""
     global where, passed
     where = boat_status.where
     passed = boat_status.passed
@@ -47,11 +49,13 @@ def update_boat_status(boat_status: BoatStatus):
 
 @app.get("/get-schedule")
 def get_schedule():
+    """Return the schedule."""
     return schedule_collection.find({}, {"_id": 0})
 
 
 @app.post("/create-schedule")
 def create_schedule(schedule: Schedule):
+    """Create a new schedule."""
     schedule_collection.insert_one(schedule.dict())
     return {"status": "Schedule updated!",
             "day_name": schedule.day_name,
@@ -60,6 +64,7 @@ def create_schedule(schedule: Schedule):
 
 @app.post("/time-estimation")
 def time_estimation(request: Dict[Literal['t'], int]):
+    """Write time to database, and return the estimated time."""
     estimate_data = {"estimate_time": 0,
                      "count": 0}
     if estimate_collection.find_one() is None:
