@@ -13,7 +13,6 @@ boat_status_collection = database["boat_status"]
 schedule_collection = database["schedule"]
 estimate_collection = database["estimate"]
 
-
 # Store the boat's status in variables for quicker access.
 where: int
 passed: int
@@ -49,15 +48,28 @@ def update_boat_status(boat_status: BoatStatus):
 
 @app.get("/get-schedule")
 def get_schedule():
-    """Return the schedule."""
+    """Return all schedules."""
     return schedule_collection.find({}, {"_id": 0})
 
 
 @app.post("/create-schedule")
 def create_schedule(schedule: Schedule):
-    """Create a new schedule."""
+    """Create a new schedule. If the schedule already exists, return an error."""
+    if schedule_collection.find_one({"day_name": schedule.day_name, "time": schedule.time}) is not None:
+        return {"status": "Schedule already exists!"}
     schedule_collection.insert_one(schedule.dict())
-    return {"status": "Schedule updated!",
+    return {"status": "Schedule created!",
+            "day_name": schedule.day_name,
+            "time": schedule.time}
+
+
+@app.post("/delete-schedule")
+def delete_schedule(schedule: Schedule):
+    """Delete a schedule."""
+    if schedule_collection.find_one({"day_name": schedule.day_name, "time": schedule.time}) is None:
+        return {"status": "Schedule does not exist!"}
+    schedule_collection.delete_one({"day_name": schedule.day_name, "time": schedule.time})
+    return {"status": "Schedule deleted!",
             "day_name": schedule.day_name,
             "time": schedule.time}
 
@@ -76,7 +88,8 @@ def time_estimation(request: Dict[Literal['t'], int]):
     else:
         # If there is a record of estimated time in the database, update it.
         estimate_data["count"] = estimate_collection.find_one()["count"] + 1
-        estimate_data["estimate_time"] = (estimate_data["estimate_time"] + estimate_data["count"] + request['t']) / (estimate_data["count"])
+        estimate_data["estimate_time"] = (estimate_data["estimate_time"] +
+                                          estimate_data["count"] + request['t']) / (estimate_data["count"])
         estimate_collection.update_one({}, {"$set": estimate_data})
     # Return the estimated time.
     return {"status": "Estimated time updated!",
