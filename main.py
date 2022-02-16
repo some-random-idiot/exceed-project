@@ -1,9 +1,9 @@
-from pymongo import MongoClient
+from typing import Literal, Optional
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-
 from pydantic import BaseModel, Field
-from typing import Literal
+from pymongo import MongoClient
 
 app = FastAPI()
 
@@ -24,8 +24,8 @@ estimate_collection = database["estimate"]
 
 
 class BoatStatus(BaseModel):
-    where: int = Field(..., gt=-1, lt=2)  # 0: start, 1: end
-    passed: int = Field(..., gt=0, lt=3)  # 1: laser 1, 2: laser 2
+    where: Optional[int]  # 0: start, 1: end
+    passed: Optional[int]  # 1: laser 1, 2: laser 2
 
 
 class Schedule(BaseModel):
@@ -53,11 +53,32 @@ def get_boat_status():
 @app.post("/update-status")
 def update_boat_status(boat_status: BoatStatus):
     """Update the boat's status."""
-    boat_status = boat_status.dict()
-    boat_status_collection.update_one({}, {"$set": boat_status}, upsert=True)
-    return {"status": "Boat status updated!",
-            "where": boat_status["where"],
-            "passed": boat_status["passed"]}
+    boat_status = boat_status.dict()  # Convert to dict.
+
+    # If there is not a boat status document, create one with placeholder values first.
+    if boat_status_collection.find_one() is None:
+        boat_status_collection.insert_one({"where": -1, "passed": -1})
+
+    if boat_status["where"] not in [0, 1] and boat_status["where"] is not None:
+        # Check if the 'where' attribute is valid.
+        return {"status": "Invalid 'where' value!"}
+    elif boat_status["passed"] not in [1, 2] and boat_status["passed"] is not None:
+        # Check if the 'passed' attribute is valid.
+        return {"status": "Invalid 'passed' value!"}
+    elif boat_status["where"] in [0, 1] or boat_status["passed"] in [1, 2]:
+        # Update the boat status.
+        if boat_status["where"] in [0, 1] and boat_status["passed"] is None:
+            # If only 'where' attribute is provided, update the 'where' attribute.
+            boat_status_collection.update_one({}, {"$set": {"where": boat_status["where"]}}, upsert=True)
+            return {"status": "Boat status updated!",
+                    "where": boat_status["where"]}
+        elif boat_status["where"] is None and boat_status["passed"]:
+            # If only 'passed' attribute is provided, update the 'passed' attribute.
+            boat_status_collection.update_one({}, {"$set": {"passed": boat_status["passed"]}}, upsert=True)
+            return {"status": "Boat status updated!",
+                    "passed": boat_status["passed"]}
+    else:
+        return {"status": "Unexpected request body!"}
 
 
 @app.get("/get-schedule")
