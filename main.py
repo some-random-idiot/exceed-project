@@ -39,11 +39,15 @@ class TimeEstimate(BaseModel):
 
 @app.get("/get-status")
 def get_boat_status():
+    """Return the boat's status."""
+    if boat_status_collection.find_one() is None:
+        return {"status": "Boat status not found!"}
     return boat_status_collection.find_one({}, {"_id": 0})
 
 
 @app.post("/update-status")
 def update_boat_status(boat_status: BoatStatus):
+    """Update the boat's status."""
     boat_status = boat_status.dict()
     boat_status_collection.update_one({}, {"$set": boat_status}, upsert=True)
     return {"status": "Boat status updated!",
