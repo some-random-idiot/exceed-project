@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from pydantic import BaseModel, Field
@@ -81,9 +81,10 @@ def create_schedule(schedule: Schedule):
             "time": schedule.time}
 
 
-@app.post("/edit-schedule")
-def edit_schedule(schedule: ScheduleEdit):
+@app.put("/edit-schedule")
+async def edit_schedule(schedule: Request):
     """Delete the old schedule and create a new one. If the new schedule information already exists, return an error."""
+    schedule = await schedule.json()
     if schedule_collection.find_one({"day_name": schedule.old_day_name, "time": schedule.old_time}) is None:
         return {"status": "The schedule targeted for change does not exist!"}
     if schedule_collection.find_one({"day_name": schedule.day_name, "time": schedule.time}) is not None:
