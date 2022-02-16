@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from fastapi import FastAPI
 
 from pydantic import BaseModel, Field
-from typing import Literal, Dict
+from typing import Literal
 
 app = FastAPI()
 
@@ -25,7 +25,11 @@ class BoatStatus(BaseModel):
 
 class Schedule(BaseModel):
     day_name: Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-    time: int  # Store this in minutes.
+    time: int = Field(..., gt=0)  # Store this in minutes.
+
+
+class TimeEstimate(BaseModel):
+    t: int = Field(..., gt=0)  # In minutes.
 
 
 @app.get("/get-status")
@@ -75,7 +79,7 @@ def delete_schedule(schedule: Schedule):
 
 
 @app.post("/time-estimation")
-def time_estimation(request: Dict[Literal['t'], int]):
+def time_estimation(request: TimeEstimate):
     """Write time to database, and return the estimated time."""
     estimate_data = {"estimate_time": 0,  # Document template.
                      "count": 0}
