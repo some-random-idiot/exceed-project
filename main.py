@@ -18,13 +18,9 @@ app.add_middleware(
 )
 
 database = client["project"]
+boat_status_collection = database["boat_status"]
 schedule_collection = database["schedule"]
 estimate_collection = database["estimate"]
-
-# Store the boat's status in variables for quicker access.
-# -1 means the variable is in its initial state.
-where = -1
-passed = -1
 
 
 class BoatStatus(BaseModel):
@@ -43,20 +39,16 @@ class TimeEstimate(BaseModel):
 
 @app.get("/get-status")
 def get_boat_status():
-    """Return the boat's status."""
-    return {"where": where,
-            "passed": passed}
+    return boat_status_collection.find_one({}, {"_id": 0})
 
 
 @app.post("/update-status")
 def update_boat_status(boat_status: BoatStatus):
-    """Update the boat's status."""
-    global where, passed
-    where = boat_status.where
-    passed = boat_status.passed
+    boat_status = boat_status.dict()
+    boat_status_collection.update_one({}, {"$set": boat_status}, upsert=True)
     return {"status": "Boat status updated!",
-            "where": where,
-            "passed": passed}
+            "where": boat_status["where"],
+            "passed": boat_status["passed"]}
 
 
 @app.get("/get-schedule")
