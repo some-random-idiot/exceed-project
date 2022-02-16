@@ -86,14 +86,16 @@ def time_estimation(request: TimeEstimate):
 
     if estimate_collection.find_one() is None:
         # If there is no record of estimated time in the database, create one.
-        estimate_data["estimate_time"] = request['t']
+        estimate_data["estimate_time"] = request.t
         estimate_data["count"] = 1
         estimate_collection.insert_one(estimate_data)
     else:
         # If there is a record of estimated time in the database, update it.
-        estimate_data["count"] = estimate_collection.find_one()["count"] + 1
-        estimate_data["estimate_time"] = (estimate_data["estimate_time"] +
-                                          estimate_data["count"] + request['t']) / (estimate_data["count"])
+        old_est_time = estimate_collection.find_one()["estimate_time"]
+        new_count = estimate_collection.find_one()["count"] + 1
+        estimate_data["estimate_time"] = (old_est_time *
+                                          new_count + request.t) / (new_count + 1)
+        estimate_data["count"] = new_count
         estimate_collection.update_one({}, {"$set": estimate_data})
     # Return the estimated time.
     return {"status": "Estimated time updated!",
