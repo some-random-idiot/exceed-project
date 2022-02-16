@@ -53,7 +53,11 @@ def update_boat_status(boat_status: BoatStatus):
 @app.get("/get-schedule")
 def get_schedule():
     """Return all schedules."""
-    return schedule_collection.find({}, {"_id": 0})
+    result_raw = schedule_collection.find({}, {"_id": 0})
+    result_list = []
+    for result in result_raw:
+        result_list.append(result)
+    return {"schedules": result_list}
 
 
 @app.post("/create-schedule")
