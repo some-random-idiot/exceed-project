@@ -85,17 +85,17 @@ def create_schedule(schedule: Schedule):
 async def edit_schedule(schedule: Request):
     """Delete the old schedule and create a new one. If the new schedule information already exists, return an error."""
     schedule = await schedule.json()
-    if schedule_collection.find_one({"day_name": schedule.old_day_name, "time": schedule.old_time}) is None:
+    if schedule_collection.find_one({"day_name": schedule["old_day_name"], "time": schedule["old_time"]}) is None:
         return {"status": "The schedule targeted for change does not exist!"}
-    if schedule_collection.find_one({"day_name": schedule.day_name, "time": schedule.time}) is not None:
+    if schedule_collection.find_one({"day_name": schedule["day_name"], "time": schedule["time"]}) is not None:
         return {"status": "The provided new schedule combination already exists!"}
-    schedule_collection.delete_one({"day_name": schedule.old_day_name, "time": schedule.old_time})
+    schedule_collection.delete_one({"day_name": schedule["old_day_name"], "time": schedule["old_time"]})
     schedule_collection.insert_one(schedule.dict())
     return {"status": "Schedule edited!",
-            "day_name": schedule.day_name,
-            "time": schedule.time,
-            "old_day_name": schedule.old_day_name,
-            "old_time": schedule.old_time}
+            "day_name": schedule["day_name"],
+            "time": schedule["time"],
+            "old_day_name": schedule["old_day_name"],
+            "old_time": schedule["old_time"]}
 
 
 @app.delete("/delete-schedule")
