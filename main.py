@@ -13,8 +13,9 @@ schedule_collection = database["schedule"]
 estimate_collection = database["estimate"]
 
 # Store the boat's status in variables for quicker access.
-where: int
-passed: int
+# -1 means the variable is in its initial state.
+where = -1
+passed = -1
 
 
 class BoatStatus(BaseModel):
