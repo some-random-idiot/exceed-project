@@ -25,11 +25,11 @@ class BoatStatus(BaseModel):
 
 class Schedule(BaseModel):
     day_name: Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-    time: int = Field(..., gt=0)  # Store this in minutes.
+    time: int = Field(..., gt=-1)  # Store this in minutes.
 
 
 class TimeEstimate(BaseModel):
-    t: int = Field(..., gt=0)  # In minutes.
+    t: int = Field(..., gt=-1)  # In minutes.
 
 
 @app.get("/get-status")
