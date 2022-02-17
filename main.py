@@ -54,9 +54,11 @@ def start_boat(start: int):
         return {"status": "Invalid start value!"}
 
     if start == 1:
-        return {"status": "Boat started!"}
+        return {"status": 1,
+                "message": "Boat started!"}
     elif start == 0:
-        return {"status": "Boat stopped!"}
+        return {"status": 0,
+                "message": "Boat stopped!"}
 
 
 @app.get("/get-status")
