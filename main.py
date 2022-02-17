@@ -69,6 +69,10 @@ def update_boat_status(boat_status: BoatStatus):
     """Update the boat's status."""
     boat_status = boat_status.dict()  # Convert to dict.
 
+    # If there is not a boat status document, create one with placeholder values first.
+    if boat_status_collection.find_one() is None:
+        boat_status_collection.insert_one({"where": -1, "passed": -1})
+
     if boat_status["where"] not in [0, 1] and boat_status["where"] is not None:
         # Check if the 'where' attribute is valid.
         return {"status": "Invalid 'where' value!"}
