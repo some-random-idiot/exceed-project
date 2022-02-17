@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from pymongo import MongoClient
 
+start_boat = 0
+
 app = FastAPI()
 
 client = MongoClient("localhost", 27017)
@@ -40,6 +42,21 @@ class ScheduleEdit(Schedule):
 
 class TimeEstimate(BaseModel):
     t: int = Field(..., gt=-1)  # In minutes.
+
+
+@app.get("/start-boat")
+def start_boat(start: int):
+    global start_boat
+
+    if start in [0, 1]:
+        start_boat = start
+    else:
+        return {"status": "Invalid start value!"}
+
+    if start == 1:
+        return {"status": "Boat started!"}
+    elif start == 0:
+        return {"status": "Boat stopped!"}
 
 
 @app.get("/get-status")
