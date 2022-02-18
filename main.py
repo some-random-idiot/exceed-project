@@ -41,7 +41,7 @@ class ScheduleEdit(Schedule):
 
 
 class TimeEstimate(BaseModel):
-    t: int = Field(..., gt=-1)  # In minutes.
+    t: int = Field(..., gt=-2)  # In minutes.
 
 
 @app.get("/start-boat")
@@ -160,25 +160,39 @@ def delete_schedule(schedule: Schedule):
             "time": schedule.time}
 
 
-@app.post("/time-estimation")
-def time_estimation(request: TimeEstimate):
-    """Write time to database, and return the estimated time."""
+@app.get("/get-time-estimate")
+def get_time_estimate():
+    """Return the estimated time."""
+    result = estimate_collection.find_one({}, {"_id": 0})
+    if result is not None:
+        return {"estimate_time": result["estimate_time"]}
+    else:
+        return {"estimate_time": "No data available!"}
+
+
+@app.post("/update-time-estimate")
+def update_time_estimate(request: TimeEstimate):
+    """Receive a time, calculate the estimated time from it, then record the estimated time to the database.
+    If t = -1 then reset 'estimated_time' and 'count'."""
     estimate_data = {"estimate_time": 0,  # Document template.
                      "count": 0}
 
-    if estimate_collection.find_one() is None:
+    if estimate_collection.find_one() is None or estimate_collection.find_one()["count"] == 0:
         # If there is no record of estimated time in the database, create one.
         estimate_data["estimate_time"] = request.t
         estimate_data["count"] = 1
         estimate_collection.insert_one(estimate_data)
+    elif request.t == -1:
+        # If t = -1, reset 'estimated_time' and 'count'.
+        estimate_collection.delete_one({})
+        return {"status": "Estimated time has been reset!"}
     else:
         # If there is a record of estimated time in the database, update it.
         old_est_time = estimate_collection.find_one()["estimate_time"]
-        new_count = estimate_collection.find_one()["count"] + 1
-        estimate_data["estimate_time"] = (old_est_time *
-                                          new_count + request.t) / (new_count + 1)
-        estimate_data["count"] = new_count
+        old_count = estimate_collection.find_one()["count"]
+        estimate_data["estimate_time"] = (old_est_time * old_count + request.t) / (old_count + 1)
+        estimate_data["count"] = old_count
         estimate_collection.update_one({}, {"$set": estimate_data})
     # Return the estimated time.
     return {"status": "Estimated time updated!",
-            "estimated_time": estimate_collection.find_one({}, {"_id": 0})}
+            "data": estimate_collection.find_one({}, {"_id": 0})}
