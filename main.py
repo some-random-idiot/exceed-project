@@ -177,22 +177,22 @@ def update_time_estimate(request: TimeEstimate):
     estimate_data = {"estimate_time": 0,  # Document template.
                      "count": 0}
 
-    if estimate_collection.find_one() is None or estimate_collection.find_one()["count"] == 0:
+    if estimate_collection.find_one() is None:
         # If there is no record of estimated time in the database, create one.
-        estimate_data["estimate_time"] = request.t
-        estimate_data["count"] = 1
         estimate_collection.insert_one(estimate_data)
-    elif request.t == -1:
+
+    if request.t == -1:
         # If t = -1, reset 'estimated_time' and 'count'.
-        estimate_collection.delete_one({})
+        estimate_collection.update_one({}, {"$set": estimate_data})
         return {"status": "Estimated time has been reset!"}
     else:
         # If there is a record of estimated time in the database, update it.
         old_est_time = estimate_collection.find_one()["estimate_time"]
         old_count = estimate_collection.find_one()["count"]
         estimate_data["estimate_time"] = (old_est_time * old_count + request.t) / (old_count + 1)
-        estimate_data["count"] = old_count
+        estimate_data["count"] = old_count + 1
         estimate_collection.update_one({}, {"$set": estimate_data})
+
     # Return the estimated time.
     return {"status": "Estimated time updated!",
             "data": estimate_collection.find_one({}, {"_id": 0})}
