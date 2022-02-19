@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from pymongo import MongoClient
@@ -51,7 +51,7 @@ def start_boat(start: int = None):
     if start in [0, 1]:
         started = start
     elif start is not None:
-        return {"status": "Invalid 'start' value! It can only be 0 or 1."}
+        raise HTTPException(422, "Invalid 'start' value! It can only be 0 or 1.")
 
     return {"status": started}
 
@@ -60,7 +60,7 @@ def start_boat(start: int = None):
 def get_boat_status():
     """Return the boat's status."""
     if boat_status_collection.find_one() is None:
-        return {"status": "Boat status not found!"}
+        raise HTTPException(404, "Boat status not found!")
     return boat_status_collection.find_one({}, {"_id": 0})
 
 
@@ -75,10 +75,10 @@ def update_boat_status(boat_status: BoatStatus):
 
     if boat_status["where"] not in [0, 1] and boat_status["where"] is not None:
         # Check if the 'where' attribute is valid.
-        return {"status": "Invalid 'where' value!"}
+        raise HTTPException(422, "Invalid 'where' value!")
     elif boat_status["passed"] not in [1, 2] and boat_status["passed"] is not None:
         # Check if the 'passed' attribute is valid.
-        return {"status": "Invalid 'passed' value!"}
+        return HTTPException(422, "Invalid 'passed' value!")
     elif boat_status["where"] in [0, 1] or boat_status["passed"] in [1, 2]:
         # Update the boat status.
         if boat_status["where"] in [0, 1] and boat_status["passed"] is None:
@@ -106,7 +106,7 @@ def update_boat_status(boat_status: BoatStatus):
             return {"status": "Boat status updated!",
                     "passed": boat_status["passed"]}
     else:
-        return {"status": "Unexpected request body!"}
+        raise HTTPException(422, "Unexpected request body!")
 
 
 @app.get("/get-schedule")
@@ -123,7 +123,7 @@ def get_schedule():
 def create_schedule(schedule: Schedule):
     """Create a new schedule. If the schedule already exists, return an error."""
     if schedule_collection.find_one({"day_name": schedule.day_name, "time": schedule.time}) is not None:
-        return {"status": "Schedule already exists!"}
+        raise HTTPException(422, "Schedule already exists!")
     schedule_collection.insert_one(schedule.dict())
     return {"status": "Schedule created!",
             "day_name": schedule.day_name,
@@ -137,9 +137,9 @@ async def edit_schedule(schedule: Request):
 
     try:
         if schedule_collection.find_one({"day_name": schedule["old_day_name"], "time": schedule["old_time"]}) is None:
-            return {"status": "The schedule targeted for change does not exist!"}
+            raise HTTPException(404, "The schedule targeted for change does not exist!")
         if schedule_collection.find_one({"day_name": schedule["day_name"], "time": schedule["time"]}) is not None:
-            return {"status": "The provided new schedule combination already exists!"}
+            raise HTTPException(422, "The provided new schedule combination already exists!")
         else:
             new_schedule = {"day_name": schedule["day_name"], "time": schedule["time"]}
             schedule_collection.delete_one({"day_name": schedule["old_day_name"], "time": schedule["old_time"]})
@@ -150,14 +150,14 @@ async def edit_schedule(schedule: Request):
                     "old_day_name": schedule["old_day_name"],
                     "old_time": schedule["old_time"]}
     except KeyError:
-        return {"status": "Unexpected request body!"}
+        raise HTTPException(422, "Unexpected request body!")
 
 
 @app.delete("/delete-schedule")
 def delete_schedule(schedule: Schedule):
     """Delete a schedule."""
     if schedule_collection.find_one({"day_name": schedule.day_name, "time": schedule.time}) is None:
-        return {"status": "Schedule does not exist!"}
+        raise HTTPException(404, "Schedule does not exist!")
     schedule_collection.delete_one({"day_name": schedule.day_name, "time": schedule.time})
     return {"status": "Schedule deleted!",
             "day_name": schedule.day_name,
@@ -171,7 +171,7 @@ def get_time_estimate():
     if result is not None:
         return {"estimate_time": result["estimate_time"]}
     else:
-        return {"estimate_time": "No data available!"}
+        raise HTTPException(404, "No estimation data available!")
 
 
 @app.post("/update-time-estimate")
