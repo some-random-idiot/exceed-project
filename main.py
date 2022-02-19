@@ -71,38 +71,24 @@ def update_boat_status(boat_status: BoatStatus):
 
     # If there is not a boat status document, create one with placeholder values first.
     if boat_status_collection.find_one() is None:
-        boat_status_collection.insert_one({"where": -1, "passed": -1})
+        boat_status_collection.insert_one({"where": -1, "passed": 0})
 
-    if boat_status["where"] not in [0, 1] and boat_status["where"] is not None:
+    if boat_status["where"] not in [-1, 0, 1] and boat_status["where"] is not None:
         # Check if the 'where' attribute is valid.
         raise HTTPException(422, "Invalid 'where' value!")
-    elif boat_status["passed"] not in [1, 2] and boat_status["passed"] is not None:
+    elif boat_status["passed"] not in [1, 2, 3] and boat_status["passed"] is not None:
         # Check if the 'passed' attribute is valid.
         return HTTPException(422, "Invalid 'passed' value!")
-    elif boat_status["where"] in [0, 1] or boat_status["passed"] in [1, 2]:
+    elif boat_status["where"] in [-1, 0, 1] or boat_status["passed"] in [1, 2, 3]:
         # Update the boat status.
-        if boat_status["where"] in [0, 1] and boat_status["passed"] is None:
+        if boat_status["where"] and boat_status["passed"] is None:
             # If only 'where' attribute is provided, update the 'where' attribute.
-            if boat_status["where"] == 0 and boat_status_collection.find_one({"where": 0, "passed": 1}) is not None:
-                # If the boat hits the starting point again, then reset the 'passed' attribute.
-                boat_status_collection.update_one({}, {"$set": {"passed": -1}})
-
-            if boat_status["passed"] is None:
-                boat_status_collection.update_one({}, {"$set": {"where": boat_status["where"]}}, upsert=True)
-            else:
-                boat_status_collection.update_one({}, {"$set": boat_status}, upsert=True)
+            boat_status_collection.update_one({}, {"$set": {"where": boat_status["where"]}}, upsert=True)
             return {"status": "Boat status updated!",
                     "where": boat_status["where"]}
         elif boat_status["where"] is None and boat_status["passed"]:
             # If only 'passed' attribute is provided, update the 'passed' attribute.
-            if boat_status["passed"] == 2 and boat_status_collection.find_one({"where": 1, "passed": 2}) is not None:
-                # If 'passed' is already 2, then change 'where' to 0.
-                boat_status["where"] = 0
-
-            if boat_status["where"] is None:
-                boat_status_collection.update_one({}, {"$set": {"passed": boat_status["passed"]}}, upsert=True)
-            else:
-                boat_status_collection.update_one({}, {"$set": boat_status}, upsert=True)
+            boat_status_collection.update_one({}, {"$set": {"passed": boat_status["passed"]}}, upsert=True)
             return {"status": "Boat status updated!",
                     "passed": boat_status["passed"]}
     else:
