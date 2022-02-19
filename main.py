@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from pymongo import MongoClient
 
+from datetime import datetime
+
 started = 0
 
 app = FastAPI()
@@ -46,12 +48,18 @@ class TimeEstimate(BaseModel):
 
 @app.get("/start-boat")
 def start_boat(start: int = None):
+    """Set the start value for activating/deactivating the boat."""
     global started
 
     if start in [0, 1]:
         started = start
     elif start is not None:
         raise HTTPException(422, "Invalid 'start' value! It can only be 0 or 1.")
+
+    # Memorize the start time in seconds.
+    if start == 1:
+        start_time = datetime.now().hour * 3600 + datetime.now().minute * 60 + datetime.now().second
+        boat_status_collection.update_one({}, {"$set": {"start_time": start_time}}, upsert=True)
 
     return {"status": started}
 
@@ -71,7 +79,7 @@ def update_boat_status(boat_status: BoatStatus):
 
     # If there is not a boat status document, create one with placeholder values first.
     if boat_status_collection.find_one() is None:
-        boat_status_collection.insert_one({"where": -1, "passed": 0})
+        boat_status_collection.update_one({}, {"$set": {"where": -1, "passed": 0}})
 
     if boat_status["where"] not in [-1, 0, 1] and boat_status["where"] is not None:
         # Check if the 'where' attribute is valid.
