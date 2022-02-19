@@ -51,15 +51,18 @@ def start_boat(start: int = None):
     """Set the start value for activating/deactivating the boat."""
     global started
 
+    # Memorize the start time in seconds.
+    if start == 1 and started == 0:
+        if boat_status_collection.find_one() is None:
+            # If the boat status is not found, create a new one.
+            boat_status_collection.insert_one({"where": 0, "passed": -1})
+        start_time = datetime.now().hour * 3600 + datetime.now().minute * 60 + datetime.now().second
+        boat_status_collection.update_one({}, {"$set": {"start_time": start_time}})
+
     if start in [0, 1]:
         started = start
     elif start is not None:
         raise HTTPException(422, "Invalid 'start' value! It can only be 0 or 1.")
-
-    # Memorize the start time in seconds.
-    if start == 1:
-        start_time = datetime.now().hour * 3600 + datetime.now().minute * 60 + datetime.now().second
-        boat_status_collection.update_one({}, {"$set": {"start_time": start_time}}, upsert=True)
 
     return {"status": started}
 
@@ -76,10 +79,6 @@ def get_boat_status():
 def update_boat_status(boat_status: BoatStatus):
     """Update the boat's status."""
     boat_status = boat_status.dict()  # Convert to dict.
-
-    # If there is not a boat status document, create one with placeholder values first.
-    if boat_status_collection.find_one() is None:
-        boat_status_collection.update_one({}, {"$set": {"where": -1, "passed": 0}})
 
     if boat_status["where"] not in [-1, 0, 1] and boat_status["where"] is not None:
         # Check if the 'where' attribute is valid.
