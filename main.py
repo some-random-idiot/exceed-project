@@ -28,8 +28,9 @@ estimate_collection = database["estimate"]
 
 
 class BoatStatus(BaseModel):
-    where: Optional[int]  # 0: start, 1: end, -1: unknown
-    passed: Optional[int]  # 1: laser 1, 2: laser 2, -1: initial state (no laser passed)
+    where: Optional[int]
+    passed: Optional[int]
+    start_time: Optional[int]
 
 
 class Schedule(BaseModel):
@@ -56,6 +57,7 @@ def start_boat(start: int = None):
         if boat_status_collection.find_one() is None:
             # If the boat status is not found, create a new one.
             boat_status_collection.insert_one({"where": 0, "passed": -1})
+        # Store the start time in seconds.
         start_time = datetime.now().hour * 3600 + datetime.now().minute * 60 + datetime.now().second
         boat_status_collection.update_one({}, {"$set": {"start_time": start_time}})
 
@@ -80,26 +82,30 @@ def update_boat_status(boat_status: BoatStatus):
     """Update the boat's status."""
     boat_status = boat_status.dict()  # Convert to dict.
 
-    if boat_status["where"] not in [-1, 0, 1] and boat_status["where"] is not None:
-        # Check if the 'where' attribute is valid.
-        raise HTTPException(422, "Invalid 'where' value!")
-    elif boat_status["passed"] not in [1, 2, 3] and boat_status["passed"] is not None:
-        # Check if the 'passed' attribute is valid.
-        return HTTPException(422, "Invalid 'passed' value!")
-    elif boat_status["where"] in [-1, 0, 1] or boat_status["passed"] in [1, 2, 3]:
-        # Update the boat status.
-        if boat_status["where"] and boat_status["passed"] is None:
-            # If only 'where' attribute is provided, update the 'where' attribute.
-            boat_status_collection.update_one({}, {"$set": {"where": boat_status["where"]}}, upsert=True)
-            return {"status": "Boat status updated!",
-                    "where": boat_status["where"]}
-        elif boat_status["where"] is None and boat_status["passed"]:
-            # If only 'passed' attribute is provided, update the 'passed' attribute.
-            boat_status_collection.update_one({}, {"$set": {"passed": boat_status["passed"]}}, upsert=True)
-            return {"status": "Boat status updated!",
-                    "passed": boat_status["passed"]}
+    if boat_status["start_time"] is not None:
+        # If the start time is not None, then record the starting time.
+        boat_status_collection.update_one({}, {"$set": {"start_time": boat_status["start_time"]}})
     else:
-        raise HTTPException(422, "Unexpected request body!")
+        if boat_status["where"] not in [-1, 0, 1] and boat_status["where"] is not None:
+            # Check if the 'where' attribute is valid.
+            raise HTTPException(422, "Invalid 'where' value!")
+        elif boat_status["passed"] not in [0, 1, 2, 3] and boat_status["passed"] is not None:
+            # Check if the 'passed' attribute is valid.
+            return HTTPException(422, "Invalid 'passed' value!")
+        elif boat_status["where"] in [-1, 0, 1] or boat_status["passed"] in [0, 1, 2, 3]:
+            # Update the boat status.
+            if boat_status["where"] in [-1, 0, 1] and boat_status["passed"] is None:
+                # If only 'where' attribute is provided, update the 'where' attribute.
+                boat_status_collection.update_one({}, {"$set": {"where": boat_status["where"]}}, upsert=True)
+                return {"status": "Boat status updated!",
+                        "where": boat_status["where"]}
+            elif boat_status["where"] is None and boat_status["passed"] in [0, 1, 2, 3]:
+                # If only 'passed' attribute is provided, update the 'passed' attribute.
+                boat_status_collection.update_one({}, {"$set": {"passed": boat_status["passed"]}}, upsert=True)
+                return {"status": "Boat status updated!",
+                        "passed": boat_status["passed"]}
+        else:
+            raise HTTPException(422, "Unexpected request body!")
 
 
 @app.get("/get-schedule")
