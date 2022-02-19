@@ -44,27 +44,22 @@ class ScheduleEdit(Schedule):
 
 
 class TimeEstimate(BaseModel):
-    t: int = Field(..., gt=-2)  # In minutes.
+    t: int = Field(..., gt=-2)  # Store this in minutes.
 
 
 @app.get("/start-boat")
-def start_boat(start: int = None):
+async def start_boat():
     """Set the start value for activating/deactivating the boat."""
     global started
 
-    # Memorize the start time in seconds.
-    if start == 1 and started == 0:
-        if boat_status_collection.find_one() is None:
-            # If the boat status is not found, create a new one.
-            boat_status_collection.insert_one({"where": 0, "passed": -1})
-        # Store the start time in seconds.
-        start_time = datetime.now().hour * 3600 + datetime.now().minute * 60 + datetime.now().second
-        boat_status_collection.update_one({}, {"$set": {"start_time": start_time}})
-
-    if start in [0, 1]:
-        started = start
-    elif start is not None:
-        raise HTTPException(422, "Invalid 'start' value! It can only be 0 or 1.")
+    # Check if current time and date is within the schedule.
+    day = datetime.now().strftime("%A").lower()[:3]  # Get the day of the week in 3 letters.
+    time = datetime.now().time().hour * 60 + datetime.now().minute  # Get current time in minutes.
+    schedule = schedule_collection.find_one({"day_name": day, "time": time})
+    if schedule is not None:
+        started = 1
+    else:
+        started = 0
 
     return {"status": started}
 
