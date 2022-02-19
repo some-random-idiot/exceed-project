@@ -80,7 +80,13 @@ def update_boat_status(boat_status: BoatStatus):
     if boat_status["start_time"] is not None:
         # If the start time is not None, then record the starting time.
         boat_status_collection.update_one({}, {"$set": {"start_time": boat_status["start_time"]}})
-        return {"status": "Boat start time updated!"}
+        return {"status": "Boat start time updated!",
+                "start_time": boat_status["start_time"]}
+    elif boat_status["is_sailing"] is not None:
+        # If is_sailing is provided, then record it to the database.
+        boat_status_collection.update_one({}, {"$set": {"is_sailing": boat_status["is_sailing"]}})
+        return {"status": "Boat sailing status updated!",
+                "is_sailing": boat_status["is_sailing"]}
     else:
         if boat_status["where"] not in [-1, 0, 1] and boat_status["where"] is not None:
             # Check if the 'where' attribute is valid.
