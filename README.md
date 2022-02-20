@@ -1,6 +1,6 @@
 <h1>Exceed Project Backend</h1>
     A <b>very</b> simple api made with FastAPI and MongoDB.
-<h1>Requirements</h1>
+<h2>Requirements</h2>
     To avoid any compatibility issues, it is recommended to run this API on <b>Python 3.9.x</b>.
     <table>
         <tr>
@@ -25,7 +25,7 @@ Simply use the following command to install all dependencies:
 <pre>
 pip install -r requirements.txt
 </pre>
-<h1>Running the API with Uvicorn</h1>
+<h2>Running the API with Uvicorn</h2>
 Run the following command to start the server:
 <pre>
 uvicorn main:app
